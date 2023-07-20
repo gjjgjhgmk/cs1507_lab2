@@ -1,0 +1,68 @@
+[33mcommit 1920fc6f61eab52bc5897a12a0be2a7551a508bd[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 16:04:01 2023 +0800
+
+    Revert "Revert "delete large file""
+    
+    This reverts commit 52d98be550fb40d5967b45c72afb860e2394dfe7.
+
+[33mcommit f87e414933bc28cdffeae9d71e7241f6e065bd3c[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 16:01:04 2023 +0800
+
+    Revert "Revert "Revert "delete large file"""
+    
+    This reverts commit 56866099c6ce5d04cf6be2d97e4423f13cd74247.
+
+[33mcommit 56866099c6ce5d04cf6be2d97e4423f13cd74247[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 16:00:48 2023 +0800
+
+    Revert "Revert "delete large file""
+    
+    This reverts commit 52d98be550fb40d5967b45c72afb860e2394dfe7.
+
+[33mcommit 52d98be550fb40d5967b45c72afb860e2394dfe7[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 16:00:21 2023 +0800
+
+    Revert "delete large file"
+    
+    This reverts commit 23174a5b034badf0117b0306feb149d6069d1363.
+
+[33mcommit 23174a5b034badf0117b0306feb149d6069d1363[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 15:49:14 2023 +0800
+
+    delete large file
+
+[33mcommit 93d0b1c0df293cb4ee5e8eff13e28a5d10f0d36d[m
+Merge: 8c6bee3 6fc3962
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 15:36:50 2023 +0800
+
+    Merge branch 'main' of github.com:gjjgjhgmk/cs1507_lab2
+
+[33mcommit 6fc3962043efdf43aa5f763cecd7446903409c14[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: gjjgjhgmk <87767848+gjjgjhgmk@users.noreply.github.com>
+Date:   Thu Jul 20 15:36:22 2023 +0800
+
+    Create readme.me
+
+[33mcommit 8c6bee3874b375dab864c6e0c14f614692b08380[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 15:28:54 2023 +0800
+
+    all files
+
+[33mcommit 82063258d7a95f7e699ddd521c4c9f97ace83738[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 14:43:33 2023 +0800
+
+    change main.py
+
+[33mcommit 51e71fea068da4679fa18e398f6a2bd7e221ba03[m
+Author: gjjgjhgmk <431429618@qq.com>
+Date:   Thu Jul 20 01:07:04 2023 +0800
+
+    original file
