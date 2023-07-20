@@ -20,6 +20,7 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Subset
+from torch.utils.tensorboard import SummaryWriter
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -35,7 +36,7 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                         ' (default: resnet18)')
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=90, type=int, metavar='N',
+parser.add_argument('--epochs', default=20, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
@@ -80,7 +81,7 @@ parser.add_argument('--dummy', action='store_true', help="use fake data to bench
 
 best_acc1 = 0
 
-
+writer = SummaryWriter(log_dir='/output/logs')
 def main():
     args = parser.parse_args()
 
@@ -139,10 +140,10 @@ def main_worker(gpu, ngpus_per_node, args):
     # create model
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
-        model = models.__dict__[args.arch](pretrained=True)
+        model = models.__dict__[args.arch](pretrained=True, num_classes = 200)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
+        model = models.__dict__[args.arch](num_classes = 200)
 
     if not torch.cuda.is_available() and not torch.backends.mps.is_available():
         print('using CPU, this will be slow')
@@ -225,8 +226,8 @@ def main_worker(gpu, ngpus_per_node, args):
     # Data loading code
     if args.dummy:
         print("=> Dummy data is used!")
-        train_dataset = datasets.FakeData(1281167, (3, 224, 224), 1000, transforms.ToTensor())
-        val_dataset = datasets.FakeData(50000, (3, 224, 224), 1000, transforms.ToTensor())
+        train_dataset = datasets.FakeData(100200, (3, 64, 64), 200, transforms.ToTensor())
+        val_dataset = datasets.FakeData(10000, (3, 64, 64), 200, transforms.ToTensor())
     else:
         traindir = os.path.join(args.data, 'train')
         valdir = os.path.join(args.data, 'val')
@@ -236,7 +237,6 @@ def main_worker(gpu, ngpus_per_node, args):
         train_dataset = datasets.ImageFolder(
             traindir,
             transforms.Compose([
-                transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
@@ -245,8 +245,6 @@ def main_worker(gpu, ngpus_per_node, args):
         val_dataset = datasets.ImageFolder(
             valdir,
             transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 normalize,
             ]))
@@ -267,7 +265,7 @@ def main_worker(gpu, ngpus_per_node, args):
         num_workers=args.workers, pin_memory=True, sampler=val_sampler)
 
     if args.evaluate:
-        validate(val_loader, model, criterion, args)
+        validate(val_loader, model, criterion, args, True)
         return
 
     for epoch in range(args.start_epoch, args.epochs):
@@ -278,7 +276,10 @@ def main_worker(gpu, ngpus_per_node, args):
         train(train_loader, model, criterion, optimizer, epoch, device, args)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        acc1, acc5, loss = validate(val_loader, model, criterion, args)
+        writer.add_scalar('Loss/val', loss, epoch)
+        writer.add_scalar('Acc@1/val', acc1, epoch)
+        writer.add_scalar('Acc@5/val', acc5, epoch)
         
         scheduler.step()
         
@@ -342,11 +343,14 @@ def train(train_loader, model, criterion, optimizer, epoch, device, args):
 
         if i % args.print_freq == 0:
             progress.display(i + 1)
+    writer.add_scalar('Loss/train', losses.avg, epoch)
+    writer.add_scalar('Acc@1/train', top1.avg, epoch)
+    writer.add_scalar('Acc@5/train', top5.avg, epoch)
 
 
-def validate(val_loader, model, criterion, args):
-
-    def run_validate(loader, base_progress=0):
+def validate(val_loader, model, criterion, args, show_diff = False):
+    
+    def run_validate(loader, base_progress=0, show_diff = False):
         with torch.no_grad():
             end = time.time()
             for i, (images, target) in enumerate(loader):
@@ -362,6 +366,21 @@ def validate(val_loader, model, criterion, args):
                 # compute output
                 output = model(images)
                 loss = criterion(output, target)
+                if show_diff and i == 0:
+                    output_0 = output.argmax(axis = 1)[target == 0].cpu().numpy()
+                    target_0 = target[target == 0].cpu().numpy()
+                    if not os.path.exists('diff'):
+                        os.mkdir('diff')
+                    for j in range(len(output_0)):
+                        if output_0[j] != target_0[j]:
+                            shutil.copyfile(f'./imagenet/val/n01443537/images/n01443537_{j}.JPEG', f'./diff/0_misclassified_to_{output_0[j]}.JPEG')
+                    output_1 = output.argmax(axis = 1)[target == 1].cpu().numpy()
+                    target_1 = target[target == 1].cpu().numpy()
+                    if not os.path.exists('diff'):
+                        os.mkdir('diff')
+                    for j in range(len(output_1)):
+                        if output_1[j] != target_1[j]:
+                            shutil.copyfile(f'./imagenet/val/n01629819/images/n01629819_{j}.JPEG', f'./diff/1_misclassified_to_{output_1[j]}.JPEG')
 
                 # measure accuracy and record loss
                 acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -388,7 +407,7 @@ def validate(val_loader, model, criterion, args):
     # switch to evaluate mode
     model.eval()
 
-    run_validate(val_loader)
+    run_validate(val_loader, show_diff = show_diff)
     if args.distributed:
         top1.all_reduce()
         top5.all_reduce()
@@ -403,13 +422,13 @@ def validate(val_loader, model, criterion, args):
 
     progress.display_summary()
 
-    return top1.avg
+    return top1.avg, top5.avg, losses.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, filename='/output/checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, '/output/model_best.pth.tar')
 
 class Summary(Enum):
     NONE = 0
